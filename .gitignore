@@ -70,7 +70,7 @@ NCRC_*_Analysis.xlsx
 CBA_*_Analysis.xlsx
 *_Analysis.xlsx
 
-# Data directory - all BigQuery outputs stay here资产负债 (not in git)
+# Data directory - all BigQuery outputs stay here (not in git)
 data/
 
 # Documentation/web exports (not needed in repo)
