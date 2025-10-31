@@ -5,21 +5,26 @@ This script queries the HMDA dataset to count the number of records
 from Wells Fargo for each year.
 """
 
-import sys
-import os
 from google.cloud import bigquery
 import pandas as pd
 
 
-def get_wells_fargo_records_by_year():
-    """
-    Query HMDA dataset for Wells Fargo records by year
+def main():
+    print("="*80)
+    print("WELLS FARGO HMDA RECORDS BY YEAR")
+    print("="*80)
+    print()
     
-    Wells Fargo's LEI: 549300RHCGHM14LPTW53
-    """
+    key_path = "hdma1-242116-74024e2eb88f.json"
+    project_id = "hdma1-242116"
     
-    HMDA_TABLE = "hdma1-242116.hmda.hmda"
-    wells_fargo_lei = "549300RHCGHM14LPTW53"
+    # Correct Wells Fargo LEI from lenders18 table
+    wells_fargo_lei = "KB1H1DSPRFMYMCUFXT09"
+    
+    print("Connecting to BigQuery...")
+    client = bigquery.Client.from_service_account_json(key_path, project=project_id)
+    print("? Connected")
+    print()
     
     query = f"""
     SELECT 
@@ -38,81 +43,52 @@ def get_wells_fargo_records_by_year():
         COUNTIF(loan_purpose = '1') as home_purchase_count,
         COUNTIF(loan_purpose = '2') as home_improvement_count,
         COUNTIF(loan_purpose IN ('31', '32')) as refinancing_count
-    FROM `{HMDA_TABLE}`
+    FROM `hdma1-242116.hmda.hmda`
     WHERE lei = '{wells_fargo_lei}'
     GROUP BY activity_year
     ORDER BY activity_year
     """
     
-    return query
-
-
-def main():
-    """Execute the query and display/save results"""
+    print(f"Querying Wells Fargo HMDA records...")
+    print(f"LEI: {wells_fargo_lei}")
+    print(f"Institution: Wells Fargo Bank")
+    print()
+    print("Running query (this may take a minute)...")
     
-    print("="*80)
-    print("WELLS FARGO HMDA RECORDS BY YEAR")
-    print("="*80)
+    query_job = client.query(query)
+    results = query_job.result()
+    df = results.to_dataframe()
+    
+    print(f"? Query completed: {len(df)} rows returned")
     print()
     
-    key_path = "hdma1-242116-74024e2eb88f.json"
-    project_id = "hdma1-242116"
-    
-    print("Connecting to BigQuery...")
-    try:
-        client = bigquery.Client.from_service_account_json(key_path, project=project_id)
-        print(f"? Connected to BigQuery project: {project_id}")
-        print()
-    except Exception as e:
-        print(f"? Error connecting to BigQuery: {e}")
-        return 1
-    
-    query = get_wells_fargo_records_by_year()
-    
-    print("Executing query for Wells Fargo HMDA records by year...")
-    print("LEI: 549300RHCGHM14LPTW53")
-    print()
-    
-    try:
-        print("Running query... (this may take a minute)")
-        query_job = client.query(query)
-        results = query_job.result()
-        df = results.to_dataframe()
-        print(f"? Query completed: {len(df):,} rows returned")
-    except Exception as e:
-        print(f"? Error executing query: {e}")
-        return 1
-    
-    print()
-    print("="*80)
-    print("RESULTS: Wells Fargo HMDA Records by Year")
-    print("="*80)
-    print()
-    print(df.to_string(index=False))
-    print()
-    
-    # Save to CSV
-    output_path = "wells_fargo_hmda_by_year.csv"
-    df.to_csv(output_path, index=False)
-    print(f"? Exported {len(df):,} rows to: {output_path}")
-    print()
-    
-    # Print summary
-    print("="*80)
-    print("SUMMARY")
-    print("="*80)
     if len(df) > 0:
-        print(f"Total years with data: {len(df)}")
-        print(f"Year range: {int(df['activity_year'].min())} - {int(df['activity_year'].max())}")
+        print("="*80)
+        print("RESULTS: Wells Fargo HMDA Records by Year")
+        print("="*80)
+        print()
+        print(df.to_string(index=False))
+        print()
+        
+        # Save to CSV
+        output_path = "wells_fargo_hmda_by_year.csv"
+        df.to_csv(output_path, index=False)
+        print(f"? Results saved to: {output_path}")
+        print()
+        
+        # Print summary
+        print("="*80)
+        print("SUMMARY")
+        print("="*80)
+        print(f"Years with data: {len(df)}")
+        print(f"Year range: {df['activity_year'].min()} - {df['activity_year'].max()}")
         print(f"Total records across all years: {int(df['total_records'].sum()):,}")
         print(f"Total originations across all years: {int(df['originations'].sum()):,}")
-        print(f"Total originated amount: ${df['total_originated_amount'].sum():,.0f}")
+        if df['total_originated_amount'].sum() > 0:
+            print(f"Total originated amount: ${df['total_originated_amount'].sum():,.0f}")
+        print()
     else:
-        print("No data found for Wells Fargo LEI: 549300RHCGHM14LPTW53")
-    print()
-    
-    return 0
-
+        print("? No data found for Wells Fargo")
 
 if __name__ == "__main__":
-    exit(main())
+    main()

@@ -1,5 +1,5 @@
 """
-Find Wells Fargo's LEI in the HMDA dataset
+Find Wells Fargo's LEI using the lenders18 table
 """
 
 from google.cloud import bigquery
@@ -7,7 +7,7 @@ import pandas as pd
 
 def main():
     print("="*80)
-    print("FINDING WELLS FARGO LEI IN HMDA DATASET")
+    print("FINDING WELLS FARGO LEI")
     print("="*80)
     print()
     
@@ -19,23 +19,25 @@ def main():
     print("✓ Connected")
     print()
     
-    # Search for Wells Fargo
+    # First, check what columns are in lenders18
+    print("Checking lenders18 table schema...")
+    table_ref = client.dataset("hmda").table("lenders18")
+    table = client.get_table(table_ref)
+    
+    print("Columns in lenders18:")
+    for field in table.schema:
+        print(f"  - {field.name} ({field.field_type})")
+    print()
+    
+    # Search for Wells Fargo in lenders18
     query = """
-    SELECT DISTINCT 
-        lei, 
-        respondent_name,
-        COUNT(*) as total_records,
-        MIN(activity_year) as first_year,
-        MAX(activity_year) as last_year
-    FROM `hdma1-242116.hmda.hmda`
+    SELECT *
+    FROM `hdma1-242116.hmda.lenders18`
     WHERE LOWER(respondent_name) LIKE '%wells%fargo%'
        OR LOWER(respondent_name) LIKE '%wellsfargo%'
-    GROUP BY lei, respondent_name
-    ORDER BY total_records DESC
-    LIMIT 20
     """
     
-    print("Searching for Wells Fargo in HMDA dataset...")
+    print("Searching for Wells Fargo in lenders18 table...")
     print()
     
     query_job = client.query(query)
@@ -43,7 +45,7 @@ def main():
     df = results.to_dataframe()
     
     if len(df) > 0:
-        print(f"Found {len(df)} Wells Fargo entities:")
+        print(f"✓ Found {len(df)} Wells Fargo entries:")
         print()
         print(df.to_string(index=False))
         print()
@@ -51,30 +53,28 @@ def main():
         # Save results
         df.to_csv("wells_fargo_leis.csv", index=False)
         print("✓ Saved to wells_fargo_leis.csv")
-    else:
-        print("❌ No Wells Fargo entities found in HMDA dataset")
         print()
-        print("Trying broader search...")
         
-        # Try broader search
-        query2 = """
-        SELECT DISTINCT 
-            lei, 
-            respondent_name,
-            COUNT(*) as total_records
-        FROM `hdma1-242116.hmda.hmda`
-        WHERE LOWER(respondent_name) LIKE '%wells%'
-        GROUP BY lei, respondent_name
-        ORDER BY total_records DESC
-        LIMIT 50
+        # Get the most common LEI
+        if 'lei' in df.columns and len(df) > 0:
+            main_lei = df['lei'].iloc[0]
+            print("="*80)
+            print(f"Main Wells Fargo LEI: {main_lei}")
+            print("="*80)
+    else:
+        print("❌ No Wells Fargo entries found")
+        print()
+        print("Showing sample of lenders...")
+        
+        sample_query = """
+        SELECT *
+        FROM `hdma1-242116.hmda.lenders18`
+        LIMIT 10
         """
         
-        query_job2 = client.query(query2)
+        query_job2 = client.query(sample_query)
         results2 = query_job2.result()
         df2 = results2.to_dataframe()
-        
-        print(f"Found {len(df2)} entities with 'wells' in name:")
-        print()
         print(df2.to_string(index=False))
 
 if __name__ == "__main__":
