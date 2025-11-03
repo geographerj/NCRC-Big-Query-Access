@@ -1,0 +1,130 @@
+name: Weekly FDIC Branch Changes Report
+
+on:
+  # Run every Friday at 9:00 AM UTC (adjust timezone as needed)
+  schedule:
+    - cron: '0 9 * * 5'  # Friday at 9 AM UTC
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: 'Start date (YYYY-MM-DD) - defaults to previous Sunday'
+        required: false
+        type: string
+      end_date:
+        description: 'End date (YYYY-MM-DD) - defaults to previous Saturday'
+        required: false
+        type: string
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install requests beautifulsoup4 pandas openpyxl
+    
+    - name: Calculate date range (Sunday to Saturday)
+      id: dates
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.start_date }}" ] && [ -n "${{ github.event.inputs.end_date }}" ]; then
+          # Use manual input dates
+          echo "start_date=${{ github.event.inputs.start_date }}" >> $GITHUB_OUTPUT
+          echo "end_date=${{ github.event.inputs.end_date }}" >> $GITHUB_OUTPUT
+        else
+          # Calculate previous week (Sunday to Saturday)
+          # Get current date
+          TODAY=$(date +%Y-%m-%d)
+          
+          # Find most recent Saturday
+          DAY_OF_WEEK=$(date -d "$TODAY" +%u)  # 1=Monday, 7=Sunday
+          
+          if [ "$DAY_OF_WEEK" -eq 6 ]; then
+            # Today is Saturday, use this Saturday
+            LAST_SATURDAY=$TODAY
+          else
+            # Calculate days since last Saturday (Saturday = 6 in %u format)
+            DAYS_SINCE_SAT=$(( ($DAY_OF_WEEK + 1) % 7 ))
+            if [ "$DAYS_SINCE_SAT" -eq 0 ]; then
+              DAYS_SINCE_SAT=7
+            fi
+            LAST_SATURDAY=$(date -d "$TODAY - $DAYS_SINCE_SAT days" +%Y-%m-%d)
+          fi
+          
+          # Previous week: Sunday (6 days before last Saturday) to Saturday
+          START_DATE=$(date -d "$LAST_SATURDAY - 6 days" +%Y-%m-%d)
+          END_DATE=$LAST_SATURDAY
+          
+          echo "start_date=$START_DATE" >> $GITHUB_OUTPUT
+          echo "end_date=$END_DATE" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Display date range
+      run: |
+        echo "Date range: ${{ steps.dates.outputs.start_date }} to ${{ steps.dates.outputs.end_date }}"
+    
+    - name: Create reports directory
+      run: |
+        mkdir -p reports/branch_changes
+    
+    - name: Generate branch changes report
+      env:
+        GITHUB_ACTIONS: true
+      run: |
+        # In GitHub Actions, save to local reports directory
+        # The script will detect we're in CI and use a different path
+        python scripts/fdic_branch_changes_report.py \
+          --start-date ${{ steps.dates.outputs.start_date }} \
+          --end-date ${{ steps.dates.outputs.end_date }} \
+          --output reports/branch_changes/Branch_Changes_${{ steps.dates.outputs.start_date }}_to_${{ steps.dates.outputs.end_date }}.xlsx
+      continue-on-error: true
+    
+    - name: Check for report file
+      id: check_report
+      run: |
+        if [ -f "reports/branch_changes/Branch_Changes_${{ steps.dates.outputs.start_date }}_to_${{ steps.dates.outputs.end_date }}.xlsx" ]; then
+          echo "report_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "report_exists=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Upload report artifact
+      if: steps.check_report.outputs.report_exists == 'true'
+      uses: actions/upload-artifact@v3
+      with:
+        name: branch-changes-report-${{ steps.dates.outputs.end_date }}
+        path: reports/branch_changes/Branch_Changes_${{ steps.dates.outputs.start_date }}_to_${{ steps.dates.outputs.end_date }}.xlsx
+        retention-days: 30
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Weekly Branch Changes Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Date Range:** ${{ steps.dates.outputs.start_date }} to ${{ steps.dates.outputs.end_date }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.check_report.outputs.report_exists }}" == "true" ]; then
+          echo "✅ Report generated successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the report from the Artifacts section above." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Report generation may require manual CSV export" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The FDIC website uses JavaScript and may require manual export:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Visit https://banks.data.fdic.gov/bankfind-suite/oscr" >> $GITHUB_STEP_SUMMARY
+          echo "2. Set dates: ${{ steps.dates.outputs.start_date }} to ${{ steps.dates.outputs.end_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "3. Event Code: 711 OR 721, Search Date: Process Date" >> $GITHUB_STEP_SUMMARY
+          echo "4. Export as CSV and run: python scripts/fdic_branch_changes_report.py --csv-file <file>.csv" >> $GITHUB_STEP_SUMMARY
+        fi
+

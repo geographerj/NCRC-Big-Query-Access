@@ -24,7 +24,7 @@ class BigQueryClient:
         self.key_path = key_path
         self.project_id = project_id
         self.client = bigquery.Client.from_service_account_json(key_path, project=project_id)
-        print(f"✓ Connected to BigQuery project: {project_id}")
+        print(f"Connected to BigQuery project: {project_id}")
     
     def execute_query(self, query: str, max_results: Optional[int] = None) -> pd.DataFrame:
         """
@@ -48,7 +48,7 @@ class BigQueryClient:
         # Convert to DataFrame
         df = results.to_dataframe()
         
-        print(f"✓ Query completed: {len(df):,} rows returned")
+        print(f"Query completed: {len(df):,} rows returned")
         return df
     
     def list_datasets(self) -> List[str]:
@@ -85,7 +85,7 @@ class BigQueryClient:
             index: Whether to include index column
         """
         df.to_csv(output_path, index=index)
-        print(f"✓ Exported {len(df):,} rows to: {output_path}")
+        print(f"Exported {len(df):,} rows to: {output_path}")
     
     def query_to_csv(self, query: str, output_path: str, max_results: Optional[int] = None):
         """

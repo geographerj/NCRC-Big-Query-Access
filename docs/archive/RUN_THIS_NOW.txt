@@ -1,0 +1,49 @@
+INSTRUCTIONS TO GENERATE FIFTH THIRD CBA REPORT
+================================================
+
+1. UPDATED SQL AVAILABLE:
+   File: FIFTH_THIRD_REDLINING_FULL_QUERY.sql
+   - Now includes cbsa_name in output
+   - Will export to CSV with CBSA names included
+
+2. STEPS TO GENERATE REPORT:
+
+   A. RUN SQL IN BIGQUERY:
+      - Open: FIFTH_THIRD_REDLINING_FULL_QUERY.sql
+      - Copy the entire SQL query
+      - Paste into BigQuery Console
+      - Execute the query
+      - Download results as CSV
+      - Save as: bquxjob_6ea7f286_19a37c2dff0.csv (or any name)
+
+   B. GENERATE EXCEL REPORT:
+      - Double-click: run_excel_generator.bat
+      - OR open Command Prompt and run:
+        python fifth_third_cba_report.py --input YOUR_CSV_FILENAME.csv
+
+3. WHAT THE REPORT WILL CONTAIN:
+
+   - ONE SHEET PER CBSA (using short names like "Chicago", "Cincinnati", etc.)
+     Each sheet shows:
+     * Loan Purpose Category (Home Purchase only)
+     * Metric (8 tract-level demographic metrics)
+     * Years 2018-2024 with:
+       - Subject Share
+       - Peer Share  
+       - Gap (color-coded)
+     * Footnotes at bottom with:
+       - Full CBSA name
+       - CBSA code
+       - Loan counts by year
+
+   - ONE METHODS SHEET:
+     * Complete documentation of filters, data sources, and methodology
+     * Interpretation guidelines
+     * Color-coding legend
+
+4. IF YOU GET ERRORS:
+   - Make sure you have pandas, openpyxl, numpy installed:
+     Run: install_packages.bat
+   - Make sure the CSV has cbsa_name column
+   - Check that the SQL ran successfully
+

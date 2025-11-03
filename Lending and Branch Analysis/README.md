@@ -195,3 +195,36 @@ The query templates are starting points. You can:
 - **Analysis help**: Share CSV files or describe what you want to analyze
 - **Crosswalk creation**: Use `save_crosswalk()` and share the file
 
+## HMDA Demographics Methodology
+
+### Race and Ethnicity Classification
+
+This project implements NCRC's methodology for calculating race and ethnicity from HMDA data. For detailed documentation, see:
+
+- [NCRC's HMDA 2018 Race and Ethnicity Methodology](https://ncrc.org/ncrcs-hmda-2018-methodology-how-to-calculate-race-and-ethnicity/)
+
+### Key Principles:
+
+1. **Hierarchical Classification**: Hispanic/Latino ethnicity is checked FIRST (any ethnicity field = 1, 11-14), regardless of race
+2. **Subgroup Prioritization**: Subgroup codes (>10 for ethnicity, >20 for race) are prioritized over general categories
+3. **Multiple Fields**: All 5 ethnicity and 5 race fields are checked
+4. **Ethnicity Subgroups**: Codes 11 (Mexican), 12 (Puerto Rican), 13 (Cuban), 14 (Other Hispanic)
+5. **Race Subgroups**: 
+   - Asian: 21-27 (Asian Indian, Chinese, Filipino, Japanese, Korean, Vietnamese, Other Asian)
+   - Pacific Islander: 41-44 (Native Hawaiian, Guamanian/Chamorro, Samoan, Other Pacific Islander)
+
+### Usage:
+
+```python
+from utils.hmda_demographics import apply_demographic_classification
+
+# Apply classification to HMDA data
+df_classified = apply_demographic_classification(df, applicant_prefix='applicant')
+
+# Now you have columns:
+# - applicant_is_hispanic
+# - applicant_race_category (Hispanic, Black, Asian, White, Native American, HoPI, Unknown)
+# - applicant_ethnicity_code
+# - applicant_race_code
+# - applicant_is_minority
+```

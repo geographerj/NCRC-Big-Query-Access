@@ -1,0 +1,31 @@
+=== QUICK START GUIDE ===
+
+The Cursor terminal has a bug and won't run Python. Use these steps:
+
+1. OPEN BIGQUERY:
+   Go to: https://console.cloud.google.com/bigquery
+
+2. RUN THE SQL:
+   - Click "Compose new query"
+   - Open FIFTH_THIRD_REDLINING_FULL_QUERY.sql in this folder
+   - Copy the ENTIRE file (Ctrl+A, Ctrl+C)
+   - Paste into BigQuery query editor
+   - Click "Run"
+
+3. EXPORT RESULTS:
+   - Once query completes, click "Save results"
+   - Choose "CSV" format
+   - Save as: fifth_third_results.csv
+
+4. GENERATE EXCEL REPORT:
+   - Open a regular PowerShell terminal (NOT in Cursor)
+   - Navigate to this folder:
+     cd "C:\Users\edite\OneDrive - Nat'l Community Reinvestment Coaltn\Desktop\DREAM Analysis"
+   - Run:
+     python ncrc_worst_lenders_analysis_v4.py fifth_third_results.csv
+
+5. FIND YOUR REPORT:
+   - Look for a new Excel file with today's date in the folder
+
+Done!
+

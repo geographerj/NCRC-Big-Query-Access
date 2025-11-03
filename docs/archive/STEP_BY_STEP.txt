@@ -1,0 +1,13 @@
+CORRECT STEPS:
+
+1. Open https://console.cloud.google.com/bigquery in your browser
+2. Click "Compose new query"
+3. Copy entire FIFTH_THIRD_REDLINING_FULL_QUERY.sql
+4. Paste into BigQuery
+5. Run the query
+6. Export results to CSV
+7. THEN run: python ncrc_worst_lenders_analysis_v4.py your_csv_file.csv
+
+SQL files must run in BigQuery, not Python!
+
+
