@@ -92,14 +92,10 @@ If the query returns no results:
 
 ### 1. Get All Wells Fargo Entities
 ```sql
-SELECT DISTINCT 
-    lei, 
-    respondent_name,
-    COUNT(*) as record_count
-FROM `hdma1-242116.hmda.hmda`
-WHERE LOWER(respondent_name) LIKE '%wells fargo%'
-GROUP BY lei, respondent_name
-ORDER BY record_count DESC;
+SELECT *
+FROM `hdma1-242116.hmda.lenders18`
+WHERE LOWER(respondent_name) LIKE '%wells%fargo%'
+   OR LOWER(respondent_name) LIKE '%wellsfargo%'
 ```
 
 ### 2. Analyze by State
@@ -109,7 +105,7 @@ SELECT
     state_code,
     COUNT(*) as total_records
 FROM `hdma1-242116.hmda.hmda`
-WHERE lei = '549300RHCGHM14LPTW53'
+WHERE lei = 'KB1H1DSPRFMYMCUFXT09'
 GROUP BY activity_year, state_code
 ORDER BY activity_year, state_code;
 ```
@@ -126,7 +122,7 @@ SELECT
     END as loan_purpose_category,
     COUNT(*) as total_records
 FROM `hdma1-242116.hmda.hmda`
-WHERE lei = '549300RHCGHM14LPTW53'
+WHERE lei = 'KB1H1DSPRFMYMCUFXT09'
 GROUP BY activity_year, loan_purpose_category
 ORDER BY activity_year, total_records DESC;
 ```
